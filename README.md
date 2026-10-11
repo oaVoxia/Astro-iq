@@ -13,36 +13,63 @@ A full-stack Next.js / TypeScript starter for Astroiq, styled in midnight navy, 
 - GitHub Actions CI/CD, Wrangler deployment configuration
 - Node's built-in test runner for pure access-control and URL-safety tests
 
-Cloudflare's current Next.js guide also documents `vinext` as its preferred adapter for new projects. This starter uses the established OpenNext adapter so the included middleware, route handlers, cookie-based session refresh and Cloudflare deployment configuration can be validated against the current OpenNext guide before launch.
+Cloudflare's current Next.js guide also documents `vinext` as its preferred path for new projects. This starter uses OpenNext to preserve the conventional Next.js runtime/API surface. Validate required Next.js features in a Workers preview before committing to the adapter; switch to `vinext` if it passes the compatibility proof of concept and is preferable for the deployment you want.
 
-## What is included
+## Included
 
-- Marketing pages: home, features, pricing, privacy, terms and refunds
-- Email/password sign-up and sign-in
-- Server-side auth callback and session refresh
-- Protected dashboard and account pages
-- Stripe one-time checkout for three access tiers
-- Idempotent Stripe webhook processing
-- Purchase history and entitlement expiry calculation
-- Server-side access gate for premium features
-- Rate-limited checkout requests
-- Redirect and return-URL validation
-- Supabase schema with row-level security
-- GitHub Actions workflow for tests, type checking, linting and deployment
+- Responsive landing, features and pricing pages
+- Purple/blue dark design system
+- Sign-up, sign-in, email callback and sign-out
+- Protected dashboard and account view
+- Three price IDs and server-side price validation
+- Checkout Session creation from server-owned tier mapping
+- Signed Stripe webhook verification
+- Transactional PostgreSQL RPCs for idempotent fulfillment and refunds
+- UTC entitlement windows and extension of existing access
+- Supabase migration with RLS policies
+- Cloudflare Wrangler config and GitHub Actions workflow
+- Security headers, safe redirect helper, health route, tests and deployment docs
 
 ## Local setup
 
-1. Copy `.env.example` to `.env.local` and fill in the values.
-2. Install dependencies:
+Requirements: Node.js 22+, npm, a Supabase project and a Stripe account.
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-3. Start Supabase locally or create a remote project and apply `supabase/migrations/202610110001_initial_schema.sql`.
-4. Create three one-time Stripe prices and set their IDs.
-5. Configure the Stripe webhook to `https://<your-domain>/api/webhooks/stripe` with the `checkout.session.completed` event.
-6. Add the exact `/auth/callback` URL to the redirect allowlist. For production, use only the canonical Astroiq domain.
+2. Copy `.env.example` to `.env.local` and fill the required values. Keep all server secrets out of browser code and source control.
+
+3. Apply the database migration to your Supabase project:
+
+   ```bash
+   # With Supabase CLI linked to the correct project
+   supabase db push
+   ```
+
+   Or run `supabase/migrations/202610110001_initial_schema.sql` through the SQL migration workflow for your project. Use a staging project first.
+
+4. In Stripe test mode, create three **one-time** GBP prices matching these values exactly:
+
+   | Tier key | Duration | Amount | Environment variable |
+   |---|---:|---:|---|
+   | `starter` | 30 days | £29.00 | `STRIPE_PRICE_30D` |
+   | `professional` | 90 days | £69.00 | `STRIPE_PRICE_90D` |
+   | `annual` | 365 days | £199.00 | `STRIPE_PRICE_365D` |
+
+   The API rejects a recurring price, a wrong currency or a price whose amount differs from the published amount. Change both the UI and the server-side expected amount if you change pricing.
+
+5. Configure a Stripe webhook endpoint pointing to `/api/webhooks/stripe`. Subscribe to:
+   - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `checkout.session.async_payment_failed`
+   - `charge.refunded`
+
+   Use the webhook signing secret for that environment. Use Stripe CLI to forward events during local development.
+
+6. In Supabase Auth settings, set the site URL to the local origin and add the exact `/auth/callback` URL to the redirect allowlist. For production, use only the canonical Astroiq domain.
 
 7. Run:
 
@@ -77,20 +104,35 @@ See `.env.example`. `NEXT_PUBLIC_*` variables are intentionally public and may b
    npx wrangler secret put STRIPE_PRICE_90D --env production
    npx wrangler secret put STRIPE_PRICE_365D --env production
    ```
+7. Set Cloudflare WAF/rate-limiting rules for `/api/checkout`, `/api/webhooks/stripe` (do not challenge legitimate Stripe requests), `/sign-in` and `/sign-up`. Keep the webhook endpoint exempt from browser challenges while requiring valid Stripe signatures at the application layer.
+8. Verify TLS, custom-domain routing, logs and rollback procedure before accepting live payments.
 
-7. Deploy from the `main` branch. The included workflow deploys to the staging environment on non-main pushes and to production on `main`.
+Deploy commands (after credentials and bindings are configured):
 
-## Security notes
+```bash
+npm run preview
+npm run deploy:staging
+npm run deploy:production
+```
 
-- All entitlement checks for premium content must happen on the server. Client-side state is presentation only.
-- The webhook verifies the Stripe signature and records processed event IDs before side effects.
-- Purchase writes use the Supabase service-role client only in the verified webhook path.
-- Row-level security prevents ordinary authenticated users from inserting or modifying purchases.
-- Checkout return URLs are restricted to the configured application origin.
-- Rate limiting is in-memory and suitable for a single Worker isolate. Replace it with a shared limiter before high-volume production traffic.
+Use a staging Supabase project and Stripe test mode for the staging deployment. Build-time public environment variables must match the target environment.
 
-See `docs/SECURITY_AUDIT.md`, `docs/PRODUCTION_RUNBOOK.md` and `docs/QA_CHECKLIST.md` before launch.
+## CI/CD
 
-## License
+`.github/workflows/ci.yml` runs dependency installation, lint, type-check, tests and build. A push to `main` can deploy production through a protected GitHub `production` environment. Configure these GitHub variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`. Configure secrets: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`. Review and pin third-party GitHub Actions to immutable commit SHAs before production use.
 
-Private starter. Add your preferred license before public distribution.
+The workflow uses `npm install` because a lockfile could not be generated in the offline authoring environment. **Before launch, run `npm install` in a network-enabled environment and commit `package-lock.json`, then switch CI back to `npm ci`.** This is a release blocker for reproducible builds.
+
+## Access and refund semantics
+
+- Access is granted only from a verified Stripe webhook, never from the success redirect.
+- The server maps a tier to a configured Stripe Price ID; the browser never supplies price or duration.
+- Entitlements use UTC timestamps and a half-open interval: `starts_at <= now < expires_at`.
+- Buying another pass schedules it after the latest active entitlement expiry.
+- A full refund revokes the entitlement attached to that order. Partial refunds are recorded but do not revoke access automatically.
+- Refund events that arrive before payment records are persisted fail and ask Stripe to retry, rather than silently losing the refund.
+- The legal refund policy and customer support process must be finalised before live launch.
+
+## Important scope note
+
+The dashboard is an authenticated workspace scaffold with sample visual data; it is not a completed financial-data analytics engine. No bank integrations, market data feeds, regulated advice, or verified analytics are included. Define the actual Astroiq core product before marketing those capabilities.
