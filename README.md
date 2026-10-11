@@ -70,15 +70,15 @@ Full environment and Cloudflare setup details are further down if you need them.
 
 This is the model we want to defend in any future security or compliance conversation.
 
-## Pricing (current placeholders)
+## Pricing (enterprise B2B)
 
 | Tier | Duration | Price | 
 |------|----------|-------|
-| Starter | 30 days | £29 |
-| Professional | 90 days | £69 |
-| Annual | 365 days | £199 |
+| Starter | 30 days | £990 |
+| Professional | 90 days | £2,490 |
+| Annual | 365 days | £7,490 |
 
-All one-time. Change the numbers in both the UI and the server-side expected amounts if you adjust them.
+All one-time. Server-side expected amounts are defined in `lib/config.ts`.
 
 ## Deployment
 
@@ -110,10 +110,10 @@ Questions or want to talk about the product? Open an issue or just reach out.
 
 See `.env.example`. Public keys are fine in the client; service role and Stripe secrets stay server-side only.
 
-Create three one-time GBP prices in Stripe that match the amounts above, then set:
-- `STRIPE_PRICE_30D`
-- `STRIPE_PRICE_90D`
-- `STRIPE_PRICE_365D`
+Current live Price IDs (enterprise):
+- `STRIPE_PRICE_30D=price_1UPQI517sTkAsp8vzOqgHTgH`
+- `STRIPE_PRICE_90D=price_1UPQI617sTkAsp8v04oXNLCS`
+- `STRIPE_PRICE_365D=price_1UPQI717sTkAsp8v2QVNyCmd`
 
 Webhook endpoint: `/api/webhooks/stripe`  
 Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `charge.refunded`
