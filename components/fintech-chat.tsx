@@ -7,9 +7,9 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 const SUGGESTIONS = [
   'What is my current runway?',
-  'Summarise key financial risks',
-  'Which costs should I review first?',
-  'How is operating margin trending?',
+  'Explain access passes',
+  'Which costs should I review?',
+  'Is this financial advice?',
 ];
 
 export function FintechChat() {
@@ -17,7 +17,7 @@ export function FintechChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Astroiq Financial Assistant. I can help you interpret metrics, highlight risks, and prioritise decisions. What would you like to review?',
+      content: 'Astroiq Financial Assistant. I can help with workspace navigation, access status, and general financial concepts. What would you like to know?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -38,11 +38,16 @@ export function FintechChat() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { role: 'user', content }] }),
+        body: JSON.stringify({ message: content }),
       });
       const data = await res.json();
-      const reply = typeof data.reply === 'string' ? data.reply : 'Unable to respond right now.';
-      setMessages((m) => [...m, { role: 'assistant', content: reply }]);
+      if (!res.ok) {
+        setMessages((m) => [...m, { role: 'assistant', content: data.error || 'Unable to respond.' }]);
+        return;
+      }
+      const reply = typeof data.reply === 'string' ? data.reply : 'No response.';
+      const disclaimer = typeof data.disclaimer === 'string' ? `\n\n${data.disclaimer}` : '';
+      setMessages((m) => [...m, { role: 'assistant', content: reply + disclaimer }]);
     } catch {
       setMessages((m) => [...m, { role: 'assistant', content: 'Connection issue. Please try again.' }]);
     } finally {
@@ -102,10 +107,11 @@ export function FintechChat() {
           >
             <input
               className="chat-input"
-              placeholder="Ask about runway, margins, costs…"
+              placeholder="Ask about runway, margins, access…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={busy}
+              maxLength={500}
             />
             <button type="submit" className="btn btn-primary" style={{ padding: '10px 12px' }} disabled={busy || !input.trim()}>
               <Send size={16} />
