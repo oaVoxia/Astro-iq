@@ -47,7 +47,7 @@ export function FintechChat() {
       }
       const reply = typeof data.reply === 'string' ? data.reply : 'No response.';
       const disclaimer = typeof data.disclaimer === 'string' ? `\n\n${data.disclaimer}` : '';
-      setMessages((m) => [...m, { role: 'assistant', content: reply + disclaimer }]);
+      setMessages((m) => [...m, { role: 'assistant', content: reply + disclaimer.replace(/\\n/g, '\n') }]);
     } catch {
       setMessages((m) => [...m, { role: 'assistant', content: 'Connection issue. Please try again.' }]);
     } finally {
@@ -82,7 +82,7 @@ export function FintechChat() {
 
           <div className="chat-messages">
             {messages.map((msg, i) => (
-              <div key={i} className={`chat-bubble ${msg.role}`}>
+              <div key={i} className={`chat-bubble ${msg.role}`} style={{ whiteSpace: 'pre-wrap' }}>
                 {msg.content}
               </div>
             ))}
