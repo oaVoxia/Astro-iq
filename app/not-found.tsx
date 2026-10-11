@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function NotFound(){return <main className="container section" style={{textAlign:'center',minHeight:'70vh'}}><span className="eyebrow">404 · NOT FOUND</span><h1 style={{fontSize:56,margin:'25px 0 12px'}}>Lost in orbit?</h1><p className="muted">That page doesn't exist or may have moved.</p><Link className="btn btn-primary" href="/" style={{marginTop:22}}>Return home</Link></main>}
