@@ -46,8 +46,9 @@ export function FintechChat() {
         return;
       }
       const reply = typeof data.reply === 'string' ? data.reply : 'No response.';
-      const disclaimer = typeof data.disclaimer === 'string' ? `\n\n${data.disclaimer}` : '';
-      setMessages((m) => [...m, { role: 'assistant', content: reply + disclaimer.replace(/\\n/g, '\n') }]);
+      const disclaimer = typeof data.disclaimer === 'string' ? data.disclaimer : '';
+      const full = disclaimer ? `${reply}\n\n${disclaimer}` : reply;
+      setMessages((m) => [...m, { role: 'assistant', content: full }]);
     } catch {
       setMessages((m) => [...m, { role: 'assistant', content: 'Connection issue. Please try again.' }]);
     } finally {
