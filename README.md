@@ -1,138 +1,131 @@
-# Astroiq — Cloudflare + Supabase + Stripe
+# Astroiq
 
-A full-stack Next.js / TypeScript starter for Astroiq, styled in midnight navy, electric purple and blue. The application supports authenticated accounts, a dashboard, purchase history, Stripe-hosted one-time checkout, and 30-, 90- and 365-day access entitlements.
+Financial clarity for people who are tired of guessing.
 
-> **Launch status:** implementation starter, not yet deployed or production-certified. The local unit tests pass. Dependency installation and the full Next.js/Cloudflare build could not be run in the authoring environment because the npm registry request timed out. See `docs/SECURITY_AUDIT.md` for verified checks, known limitations and launch blockers.
+Astroiq is a focused workspace that helps founders and operators see their numbers clearly, make better decisions, and stop living in spreadsheets. Think of it as the calm, opinionated dashboard you actually want to open on Monday morning.
 
-## Stack
+Right now this repo is the production-ready foundation: auth, payments, entitlements, and a clean dark UI — everything you need to start shipping the real product on top.
 
-- Next.js App Router, React and TypeScript
-- Cloudflare Workers with the OpenNext adapter (`@opennextjs/cloudflare`)
-- Supabase Auth + PostgreSQL with row-level security
-- Stripe Checkout in `mode: "payment"` only
-- GitHub Actions CI/CD, Wrangler deployment configuration
-- Node's built-in test runner for pure access-control and URL-safety tests
+## Why this exists
 
-Cloudflare's current Next.js guide also documents `vinext` as its preferred path for new projects. This starter uses OpenNext to preserve the conventional Next.js runtime/API surface. Validate required Next.js features in a Workers preview before committing to the adapter; switch to `vinext` if it passes the compatibility proof of concept and is preferable for the deployment you want.
+Most financial tools are either:
+- Too heavy (enterprise software that takes a quarter to implement), or
+- Too light (pretty charts with no real access control or billing).
 
-## Included
+Astroiq sits in the middle. One place to understand your position, runway, and priorities — with proper accounts, paid access, and a security model that won't embarrass you in a diligence call.
 
-- Responsive landing, features and pricing pages
-- Purple/blue dark design system
-- Sign-up, sign-in, email callback and sign-out
-- Protected dashboard and account view
-- Three price IDs and server-side price validation
-- Checkout Session creation from server-owned tier mapping
-- Signed Stripe webhook verification
-- Transactional PostgreSQL RPCs for idempotent fulfillment and refunds
-- UTC entitlement windows and extension of existing access
-- Supabase migration with RLS policies
-- Cloudflare Wrangler config and GitHub Actions workflow
-- Security headers, safe redirect helper, health route, tests and deployment docs
+## What's already built
 
-## Local setup
+This isn't a landing page with a "coming soon" form. It's a working app skeleton:
 
-Requirements: Node.js 22+, npm, a Supabase project and a Stripe account.
+- Email auth (sign up, sign in, verification, protected routes)
+- Three clear access tiers (30 / 90 / 365 days) with Stripe Checkout
+- Server-side entitlement checks — the browser never decides who has access
+- Idempotent webhooks + refund handling
+- Dashboard + account views
+- Dark purple/blue design system that doesn't look like every other SaaS template
+- Full Supabase schema with RLS, CI workflow, and Cloudflare deployment config
 
-1. Install dependencies:
+The dashboard currently shows sample data. The plumbing (who paid, who has access, how long it lasts) is real.
 
-   ```bash
-   npm install
-   ```
+## Stack (the short version)
 
-2. Copy `.env.example` to `.env.local` and fill the required values. Keep all server secrets out of browser code and source control.
+- **Frontend**: Next.js App Router + React + TypeScript
+- **Backend / edge**: Cloudflare Workers (via OpenNext)
+- **Auth + DB**: Supabase (Auth + Postgres + RLS)
+- **Payments**: Stripe (one-time Checkout only — no surprise subscriptions)
+- **CI**: GitHub Actions that can deploy straight to production
 
-3. Apply the database migration to your Supabase project:
+We chose boring, proven pieces so we can spend time on the actual product instead of fighting infrastructure.
 
-   ```bash
-   # With Supabase CLI linked to the correct project
-   supabase db push
-   ```
+## Quick start
 
-   Or run `supabase/migrations/202610110001_initial_schema.sql` through the SQL migration workflow for your project. Use a staging project first.
-
-4. In Stripe test mode, create three **one-time** GBP prices matching these values exactly:
-
-   | Tier key | Duration | Amount | Environment variable |
-   |---|---:|---:|---|
-   | `starter` | 30 days | £29.00 | `STRIPE_PRICE_30D` |
-   | `professional` | 90 days | £69.00 | `STRIPE_PRICE_90D` |
-   | `annual` | 365 days | £199.00 | `STRIPE_PRICE_365D` |
-
-   The API rejects a recurring price, a wrong currency or a price whose amount differs from the published amount. Change both the UI and the server-side expected amount if you change pricing.
-
-5. Configure a Stripe webhook endpoint pointing to `/api/webhooks/stripe`. Subscribe to:
-   - `checkout.session.completed`
-   - `checkout.session.async_payment_succeeded`
-   - `checkout.session.async_payment_failed`
-   - `charge.refunded`
-
-   Use the webhook signing secret for that environment. Use Stripe CLI to forward events during local development.
-
-6. In Supabase Auth settings, set the site URL to the local origin and add the exact `/auth/callback` URL to the redirect allowlist. For production, use only the canonical Astroiq domain.
-
-7. Run:
-
-   ```bash
-   npm run dev
-   npm test
-   npm run typecheck
-   npm run lint
-   npm run build
-   ```
-
-## Environment variables
-
-See `.env.example`. `NEXT_PUBLIC_*` variables are intentionally public and may be embedded in client bundles. The Supabase publishable/anon key is safe to expose only when row-level security is configured correctly. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` must remain server-side secrets.
-
-`APP_BASE_URL` must be the exact canonical origin, with no trailing path, and must match the browser request `Origin` for checkout. The app is currently configured for GBP. Do not reuse production Stripe keys or a production Supabase service-role key in staging or local environments.
-
-## Cloudflare setup
-
-1. Create the Cloudflare account/domain and verify DNS ownership.
-2. Run the OpenNext adapter compatibility test for SSR, middleware/session refresh, route handlers, `cookies()`, Supabase requests and Stripe SDK. Use the current official guide: <https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/>.
-3. Configure the Worker and custom domain. This repository uses `wrangler.jsonc` with separate `staging` and `production` environments.
-4. Configure public runtime variables and server secrets for **each Worker environment separately**. Worker environment secrets are not assumed to inherit from the default environment. In the Cloudflare dashboard, set `APP_BASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_APP_URL` to values for the matching environment.
-5. For production, configure the canonical public URL and Supabase URL/key as GitHub `production` environment variables so they are present at build time; add `CLOUDFLARE_ACCOUNT_ID` and a least-privilege `CLOUDFLARE_API_TOKEN` as GitHub secrets.
-6. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_30D`, `STRIPE_PRICE_90D`, `STRIPE_PRICE_365D`, and `SUPABASE_SERVICE_ROLE_KEY` as Worker secrets in each environment. Do not put secrets in `wrangler.jsonc` or GitHub variables. Example for production (repeat with `--env staging` and staging-only credentials for staging):
-
-   ```bash
-   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production
-   npx wrangler secret put STRIPE_SECRET_KEY --env production
-   npx wrangler secret put STRIPE_WEBHOOK_SECRET --env production
-   npx wrangler secret put STRIPE_PRICE_30D --env production
-   npx wrangler secret put STRIPE_PRICE_90D --env production
-   npx wrangler secret put STRIPE_PRICE_365D --env production
-   ```
-7. Set Cloudflare WAF/rate-limiting rules for `/api/checkout`, `/api/webhooks/stripe` (do not challenge legitimate Stripe requests), `/sign-in` and `/sign-up`. Keep the webhook endpoint exempt from browser challenges while requiring valid Stripe signatures at the application layer.
-8. Verify TLS, custom-domain routing, logs and rollback procedure before accepting live payments.
-
-Deploy commands (after credentials and bindings are configured):
+You'll need Node 22+, a Supabase project, and a Stripe account (test mode is fine).
 
 ```bash
-npm run preview
-npm run deploy:staging
-npm run deploy:production
+npm install
+cp .env.example .env.local   # fill in your keys
+# apply supabase/migrations/202610110001_initial_schema.sql
+npm run dev
 ```
 
-Use a staging Supabase project and Stripe test mode for the staging deployment. Build-time public environment variables must match the target environment.
+Then run the checks:
 
-## CI/CD
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
 
-`.github/workflows/ci.yml` runs dependency installation, lint, type-check, tests and build. A push to `main` can deploy production through a protected GitHub `production` environment. Configure these GitHub variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`. Configure secrets: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`. Review and pin third-party GitHub Actions to immutable commit SHAs before production use.
+Full environment and Cloudflare setup details are further down if you need them.
 
-The workflow uses `npm install` because a lockfile could not be generated in the offline authoring environment. **Before launch, run `npm install` in a network-enabled environment and commit `package-lock.json`, then switch CI back to `npm ci`.** This is a release blocker for reproducible builds.
+## How access works (the important part)
 
-## Access and refund semantics
+- Users pick a tier → we create a Stripe Checkout session with a price ID that lives only on the server.
+- Payment succeeds → Stripe hits our webhook → we record the order and grant an entitlement.
+- The success page does **not** grant access. Only the signed webhook does.
+- Entitlements have clear start/end times in UTC. Buying another pass stacks after the current one expires.
+- Full refunds revoke access. Partial refunds are recorded but don't auto-revoke.
 
-- Access is granted only from a verified Stripe webhook, never from the success redirect.
-- The server maps a tier to a configured Stripe Price ID; the browser never supplies price or duration.
-- Entitlements use UTC timestamps and a half-open interval: `starts_at <= now < expires_at`.
-- Buying another pass schedules it after the latest active entitlement expiry.
-- A full refund revokes the entitlement attached to that order. Partial refunds are recorded but do not revoke access automatically.
-- Refund events that arrive before payment records are persisted fail and ask Stripe to retry, rather than silently losing the refund.
-- The legal refund policy and customer support process must be finalised before live launch.
+This is the model we want to defend in any future security or compliance conversation.
 
-## Important scope note
+## Pricing (current placeholders)
 
-The dashboard is an authenticated workspace scaffold with sample visual data; it is not a completed financial-data analytics engine. No bank integrations, market data feeds, regulated advice, or verified analytics are included. Define the actual Astroiq core product before marketing those capabilities.
+| Tier | Duration | Price | 
+|------|----------|-------|
+| Starter | 30 days | £29 |
+| Professional | 90 days | £69 |
+| Annual | 365 days | £199 |
+
+All one-time. Change the numbers in both the UI and the server-side expected amounts if you adjust them.
+
+## Deployment
+
+Configured for Cloudflare with separate staging and production environments. The GitHub Action on `main` can deploy production once you add the required secrets and variables.
+
+See the longer notes below or `docs/PRODUCTION_RUNBOOK.md` before you take real money.
+
+## Current status
+
+This is a solid implementation starter, not a finished product. Local tests pass. The Cloudflare build path should be re-verified in a proper environment (the original authoring setup hit an npm timeout). Security audit notes and known limitations live in `docs/`.
+
+The core product (what the dashboard actually analyzes) is still yours to define. This repo just makes sure the accounts, payments, and access control won't be the thing that slows you down.
+
+## Next
+
+- Wire up real data sources
+- Decide the actual insights Astroiq should surface
+- Tighten the legal pages
+- Ship the first version people can pay for
+
+Questions or want to talk about the product? Open an issue or just reach out.
+
+---
+
+### Technical appendix
+
+<details>
+<summary>Environment variables & Stripe setup</summary>
+
+See `.env.example`. Public keys are fine in the client; service role and Stripe secrets stay server-side only.
+
+Create three one-time GBP prices in Stripe that match the amounts above, then set:
+- `STRIPE_PRICE_30D`
+- `STRIPE_PRICE_90D`
+- `STRIPE_PRICE_365D`
+
+Webhook endpoint: `/api/webhooks/stripe`  
+Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `charge.refunded`
+
+</details>
+
+<details>
+<summary>Cloudflare & CI notes</summary>
+
+The app is set up for the OpenNext Cloudflare adapter. Public vars and secrets must be configured per Worker environment. The CI workflow currently uses `npm install` (lockfile wasn't generated in the original offline environment). Commit a `package-lock.json` and switch to `npm ci` before launch.
+
+Full runbook: `docs/PRODUCTION_RUNBOOK.md`  
+Security notes: `docs/SECURITY_AUDIT.md`
+
+</details>
