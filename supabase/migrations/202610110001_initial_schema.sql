@@ -105,10 +105,16 @@ create policy "profiles_update_own" on public.profiles for update to authenticat
 revoke update on public.profiles from anon, authenticated;
 grant update (display_name) on public.profiles to authenticated;
 create policy "orders_select_own" on public.orders for select to authenticated using ((select auth.uid()) = user_id);
--- Orders are created and updated only by trusted server routes after authentication.
 create policy "payments_select_own" on public.payments for select to authenticated using ((select auth.uid()) = user_id);
 create policy "entitlements_select_own" on public.entitlements for select to authenticated using ((select auth.uid()) = user_id);
--- No client policies for webhook_events/audit_logs. Writes to orders, payments and entitlements are server-only.
+
+-- Explicit SELECT grants so RLS policies are usable.
+grant select on public.profiles to authenticated;
+grant select on public.orders to authenticated;
+grant select on public.payments to authenticated;
+grant select on public.entitlements to authenticated;
+
+-- Writes to commercial tables are server-only.
 revoke insert, update, delete on public.orders from anon, authenticated;
 revoke all on public.webhook_events from anon, authenticated;
 revoke all on public.audit_logs from anon, authenticated;
@@ -140,7 +146,6 @@ begin
   if v_order.stripe_checkout_session_id is not null and v_order.stripe_checkout_session_id <> p_session_id then
     raise exception 'checkout session mismatch';
   end if;
-  -- A second distinct success event for an already-paid order must not create another grant.
   if v_order.status = 'paid' then return; end if;
   if v_order.status <> 'pending' then raise exception 'order is not payable'; end if;
 
