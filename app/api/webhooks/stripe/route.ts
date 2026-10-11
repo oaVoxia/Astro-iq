@@ -24,6 +24,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
+  const log = (msg: string, extra?: unknown) => console.error(msg, { eventId: event.id, extra });
 
   try {
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
@@ -38,11 +39,13 @@ export async function POST(request: Request) {
       const durationDays = Number(session.metadata?.duration_days);
 
       if (!orderId || !userId || !isTierId(tier) || !Number.isInteger(durationDays)) {
+        log('webhook_missing_metadata');
         return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
       }
 
       const expected = tierConfig[tier].expectedAmount;
       if (session.amount_total !== expected || session.currency !== 'gbp') {
+        log('webhook_amount_mismatch', { amount: session.amount_total, currency: session.currency });
         return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 });
       }
 
@@ -59,9 +62,18 @@ export async function POST(request: Request) {
       });
 
       if (error) {
-        console.error('fulfill_failed', error.message);
+        log('fulfill_failed', error.message);
         return NextResponse.json({ error: 'Fulfillment failed' }, { status: 500 });
       }
+    }
+
+    if (event.type === 'checkout.session.async_payment_failed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const orderId = session.metadata?.order_id || session.client_reference_id;
+      if (orderId) {
+        await admin.from('orders').update({ status: 'failed' }).eq('id', orderId).eq('status', 'pending');
+      }
+      return NextResponse.json({ received: true });
     }
 
     if (event.type === 'charge.refunded') {
@@ -79,15 +91,14 @@ export async function POST(request: Request) {
       });
 
       if (error) {
-        console.error('refund_failed', error.message);
-        // Ask Stripe to retry if the payment record is not yet visible.
+        log('refund_failed', error.message);
         return NextResponse.json({ error: 'Refund processing failed' }, { status: 500 });
       }
     }
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error('webhook_error', err instanceof Error ? err.message : 'unknown');
+    log('webhook_error', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Webhook failed' }, { status: 500 });
   }
 }
