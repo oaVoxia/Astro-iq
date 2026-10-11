@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerEnv, isTierId, tierConfig, type TierId } from '@/lib/config';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getStripe } from '@/lib/stripe/server';
 import { safeReturnUrl } from '@/lib/security/urls';
 
@@ -38,8 +39,9 @@ export async function POST(request: Request) {
     const successUrl = safeReturnUrl(null, baseUrl, '/dashboard?checkout=success');
     const cancelUrl = safeReturnUrl(null, baseUrl, '/pricing?checkout=cancelled');
 
-    // Create a pending order so the webhook can fulfill against a known record.
-    const { data: order, error: orderError } = await supabase
+    // Service-role insert: RLS revokes inserts from authenticated users.
+    const admin = createSupabaseAdminClient();
+    const { data: order, error: orderError } = await admin
       .from('orders')
       .insert({
         user_id: user.id,
