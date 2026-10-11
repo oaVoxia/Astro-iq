@@ -27,10 +27,11 @@
         "./*"
       ]
     },
-    "allowImportingTsExtensions": true
+    "noUncheckedSideEffectImports": false
   },
   "include": [
     "next-env.d.ts",
+    "global.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
