@@ -4,8 +4,26 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getStripe } from '@/lib/stripe/server';
 import { safeReturnUrl } from '@/lib/security/urls';
+import { rateLimitConfiguration } from '@/lib/security/rate-limit';
 
 export const runtime = 'nodejs';
+
+// Simple in-memory limiter. Replace with Cloudflare rate limiting for production multi-isolate use.
+const hits = new Map<string, { count: number; reset: number }>();
+
+function isRateLimited(userId: string): boolean {
+  const { requests, windowSeconds } = rateLimitConfiguration('checkout');
+  const now = Date.now();
+  const key = `checkout:${userId}`;
+  const entry = hits.get(key);
+  if (!entry || now > entry.reset) {
+    hits.set(key, { count: 1, reset: now + windowSeconds * 1000 });
+    return false;
+  }
+  if (entry.count >= requests) return true;
+  entry.count += 1;
+  return false;
+}
 
 export async function POST(request: Request) {
   try {
@@ -19,6 +37,10 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Sign in required.' }, { status: 401 });
+    }
+
+    if (isRateLimited(user.id)) {
+      return NextResponse.json({ error: 'Too many checkout attempts. Try again shortly.' }, { status: 429 });
     }
 
     const env = getServerEnv();
@@ -39,7 +61,6 @@ export async function POST(request: Request) {
     const successUrl = safeReturnUrl(null, baseUrl, '/dashboard?checkout=success');
     const cancelUrl = safeReturnUrl(null, baseUrl, '/pricing?checkout=cancelled');
 
-    // Service-role insert: RLS revokes inserts from authenticated users.
     const admin = createSupabaseAdminClient();
     const { data: order, error: orderError } = await admin
       .from('orders')
@@ -59,22 +80,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unable to start checkout.' }, { status: 500 });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: user.email ?? undefined,
-      client_reference_id: order.id,
-      metadata: {
-        order_id: order.id,
-        user_id: user.id,
-        tier,
-        duration_days: String(config.days),
-      },
-    });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: user.email ?? undefined,
+        client_reference_id: order.id,
+        metadata: {
+          order_id: order.id,
+          user_id: user.id,
+          tier,
+          duration_days: String(config.days),
+        },
+      });
+    } catch (stripeErr) {
+      // Clean up the pending order if session creation fails.
+      await admin.from('orders').update({ status: 'failed' }).eq('id', order.id);
+      throw stripeErr;
+    }
 
     if (!session.url) {
+      await admin.from('orders').update({ status: 'failed' }).eq('id', order.id);
       return NextResponse.json({ error: 'Checkout session missing URL.' }, { status: 500 });
     }
 
