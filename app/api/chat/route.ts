@@ -20,12 +20,6 @@ function isLimited(userId: string) {
   return false;
 }
 
-const SYSTEM_PROMPT = `You are Astroiq Assistant, an enterprise fintech workspace helper.
-You explain financial concepts, help users navigate the Astroiq workspace, and summarize access status.
-You do NOT provide regulated financial advice, investment recommendations, tax advice, or personalized forecasts.
-Always note when something is general information only.
-Keep answers concise, professional, and clear. Use British English.`;
-
 function localReply(message: string): string {
   const q = message.toLowerCase();
   if (q.includes('runway')) return 'Runway is the number of months your current cash can cover operating expenses at the current burn rate. In Astroiq it is shown as an illustrative metric on the workspace overview. This is general information, not financial advice.';
@@ -52,7 +46,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message is required (max 500 characters).' }, { status: 400 });
     }
 
-    // Placeholder: swap this for a real LLM call when an API key is configured.
     const reply = localReply(message);
 
     return NextResponse.json({
