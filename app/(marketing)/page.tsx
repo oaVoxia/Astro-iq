@@ -3,5 +3,108 @@ import { ArrowRight } from 'lucide-react';
 import { MarketingShell } from '@/components/marketing-shell';
 import { CheckoutButton } from '@/components/checkout-button';
 
-function Preview() { return <div className="dashboard-preview glass"><div className="preview-top"><div><div style={{fontSize:12,color:'#8f9bbc'}}>WORKSPACE OVERVIEW</div><strong style={{display:'block',marginTop:5}}>Financial pulse</strong></div><span className="status-pill">● Live workspace</span></div><div className="preview-grid"><div className="metric"><div className="metric-label">Net position</div><div className="metric-value">£84.2k</div><div style={{color:'#65d8bb',fontSize:11,marginTop:5}}>↗ 8.4% period</div></div><div className="metric"><div className="metric-label">Operating margin</div><div className="metric-value">24.8%</div><div style={{color:'#65d8bb',fontSize:11,marginTop:5}}>↗ 2.1 pts</div></div><div className="metric"><div className="metric-label">Runway</div><div className="metric-value">9.6 mo</div><div style={{color:'#8fa9ff',fontSize:11,marginTop:5}}>Stable outlook</div></div></div><div className="chart"><div className="chart-label">Illustrative trend · sample data</div><svg viewBox="0 0 420 120" preserveAspectRatio="none" aria-label="Illustrative financial trend chart"><defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#7564ff" stopOpacity=".42"/><stop offset="100%" stopColor="#7564ff" stopOpacity="0"/></linearGradient></defs><path d="M0 92 C28 86 35 74 60 80 S93 49 122 62 S154 82 182 56 S218 67 244 42 S282 55 310 28 S346 46 371 18 S400 22 420 8 L420 120 L0 120 Z" fill="url(#area)"/><path d="M0 92 C28 86 35 74 60 80 S93 49 122 62 S154 82 182 56 S218 67 244 42 S282 55 310 28 S346 46 371 18 S400 22 420 8" fill="none" stroke="#9385ff" strokeWidth="2.5"/></svg></div><div className="preview-bottom"><div className="small-panel"><div className="metric-label">Priority insight</div><div style={{fontSize:12,lineHeight:1.5,marginTop:8}}>Review your largest cost movements before the next planning cycle.</div></div><div className="small-panel"><div className="metric-label">Workspace health</div><div style={{display:'flex',alignItems:'center',gap:8,marginTop:9}}><span className="dot"/><strong style={{fontSize:13}}>All systems normal</strong></div></div></div></div>; }
-export default function HomePage() { return <MarketingShell><main><section className="hero"><div className="container hero-grid"><div><span className="eyebrow">FINANCIAL INTELLIGENCE</span><h1>Clarity for the decisions<br/>that <span className="gradient-text">actually matter.</span></h1><p>Astroiq is a focused workspace that helps founders and operators see their numbers clearly, make better decisions, and stop living in spreadsheets.</p><div style={{display:'flex',gap:12,flexWrap:'wrap',marginTop:28}}><Link href="/sign-up" className="btn btn-primary">Get started <ArrowRight size={16}/></Link><Link href="/pricing" className="btn btn-secondary">View pricing</Link></div></div><Preview/></div></section><section className="section"><div className="container"><div className="section-heading"><span className="eyebrow">SIMPLE ACCESS</span><h2>One-time passes.<br/><span className="gradient-text">No subscriptions.</span></h2></div><div className="pricing-grid">{[{tier:'starter' as const,name:'Starter',price:'£990',days:'30 days',desc:'A short pilot to evaluate the workspace.'},{tier:'professional' as const,name:'Professional',price:'£2,490',days:'90 days',desc:'More time to build a consistent working rhythm.',popular:true},{tier:'annual' as const,name:'Annual',price:'£7,490',days:'365 days',desc:'The best value for a full year of access.'}].map(p=><article className={`price-card glass ${p.popular?'popular':''}`} key={p.tier}>{p.popular&&<span className="popular-tag">Popular</span>}<h3>{p.name}</h3><div className="price">{p.price} <small>one-time</small></div><span className="muted" style={{fontSize:13}}>{p.days} of access</span><p>{p.desc}</p><ul className="check-list"><li><span className="check">✓</span>Standard workspace access</li><li><span className="check">✓</span>Secure account and saved work</li><li><span className="check">✓</span>No automatic renewal</li></ul><CheckoutButton tier={p.tier} label="Choose access" className={p.popular?'btn btn-primary':'btn btn-secondary'}/></article>)}</div><p className="muted" style={{textAlign:'center',fontSize:11,marginTop:18}}>Enterprise GBP pricing. Final taxes and payment methods are shown during checkout.</p></div></section><section className="section" id="faq"><div className="container"><div className="section-heading"><span className="eyebrow">GOOD TO KNOW</span><h2>Frequently asked <span className="gradient-text">questions.</span></h2></div><div className="faq-grid"><article className="faq"><h3>Will I be charged again?</h3><p>No. Each Astroiq access pass is a one-time payment. There are no subscriptions and no automatic renewals.</p></article><article className="faq"><h3>When does my access start?</h3><p>Access begins when Stripe confirms successful payment and Astroiq activates your entitlement. The purchased duration is measured in 24-hour periods.</p></article><article className="faq"><h3>Can I purchase another pass?</h3><p>Yes. Additional paid passes extend your existing active access period. Your account shows your current access status and expiry.</p></article><article className="faq"><h3>What happens when access expires?</h3><p>Protected workspace features become unavailable until you purchase another pass. Account and transaction records remain subject to our published retention policy.</p></article><article className="faq"><h3>Is Astroiq financial advice?</h3><p>This starter website describes a financial intelligence workspace. Product claims and any regulated financial functionality must be reviewed and clearly defined before launch.</p></article></div></div></section></main></MarketingShell>; }
+function Preview() {
+  return (
+    <div className="dashboard-preview glass">
+      <div className="preview-top">
+        <div>
+          <div style={{ fontSize: 11, color: '#8a8a9a', letterSpacing: '.06em' }}>WORKSPACE OVERVIEW</div>
+          <strong style={{ display: 'block', marginTop: 4, fontWeight: 600 }}>Financial pulse</strong>
+        </div>
+        <span className="status-pill">● Live workspace</span>
+      </div>
+      <div className="preview-grid">
+        <div className="metric"><div className="metric-label">Net position</div><div className="metric-value">£84.2k</div><div style={{ color: '#6ee7b7', fontSize: 11, marginTop: 5 }}>↗ 8.4% period</div></div>
+        <div className="metric"><div className="metric-label">Operating margin</div><div className="metric-value">24.8%</div><div style={{ color: '#6ee7b7', fontSize: 11, marginTop: 5 }}>↗ 2.1 pts</div></div>
+        <div className="metric"><div className="metric-label">Runway</div><div className="metric-value">9.6 mo</div><div style={{ color: '#c4b5fd', fontSize: 11, marginTop: 5 }}>Stable outlook</div></div>
+      </div>
+      <div className="chart">
+        <div className="chart-label">Illustrative trend · sample data</div>
+        <svg viewBox="0 0 420 120" preserveAspectRatio="none" aria-label="Illustrative financial trend chart">
+          <defs>
+            <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity=".4" />
+              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d="M0 92 C28 86 35 74 60 80 S93 49 122 62 S154 82 182 56 S218 67 244 42 S282 55 310 28 S346 46 371 18 S400 22 420 8 L420 120 L0 120 Z" fill="url(#area)" />
+          <path d="M0 92 C28 86 35 74 60 80 S93 49 122 62 S154 82 182 56 S218 67 244 42 S282 55 310 28 S346 46 371 18 S400 22 420 8" fill="none" stroke="#a78bfa" strokeWidth="2" />
+        </svg>
+      </div>
+      <div className="preview-bottom">
+        <div className="small-panel">
+          <div className="metric-label">Priority insight</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: '#d4d4dc' }}>Review your largest cost movements before the next planning cycle.</div>
+        </div>
+        <div className="small-panel">
+          <div className="metric-label">Workspace health</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}><span className="dot" /><strong style={{ fontSize: 13 }}>All systems normal</strong></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <MarketingShell>
+      <main>
+        <section className="hero">
+          <div className="container hero-grid">
+            <div>
+              <span className="eyebrow">Financial intelligence</span>
+              <h1>Clarity for the decisions<br />that <span className="gradient-text">actually matter.</span></h1>
+              <p>Astroiq is a focused workspace that helps founders and operators see their numbers clearly, make better decisions, and stop living in spreadsheets.</p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 28 }}>
+                <Link href="/sign-up" className="btn btn-primary">Get started <ArrowRight size={15} /></Link>
+                <Link href="/pricing" className="btn btn-secondary">View pricing</Link>
+              </div>
+            </div>
+            <Preview />
+          </div>
+        </section>
+        <section className="section">
+          <div className="container">
+            <div className="section-heading">
+              <span className="eyebrow">Simple access</span>
+              <h2>One-time passes.<br /><span className="gradient-text">No subscriptions.</span></h2>
+            </div>
+            <div className="pricing-grid">
+              {[{ tier: 'starter' as const, name: 'Starter', price: '£990', days: '30 days', desc: 'A short pilot to evaluate the workspace.' }, { tier: 'professional' as const, name: 'Professional', price: '£2,490', days: '90 days', desc: 'More time to build a consistent working rhythm.', popular: true }, { tier: 'annual' as const, name: 'Annual', price: '£7,490', days: '365 days', desc: 'The best value for a full year of access.' }].map(p => (
+                <article className={`price-card glass ${p.popular ? 'popular' : ''}`} key={p.tier}>
+                  {p.popular && <span className="popular-tag">Popular</span>}
+                  <h3>{p.name}</h3>
+                  <div className="price">{p.price} <small>one-time</small></div>
+                  <span className="muted" style={{ fontSize: 13 }}>{p.days} of access</span>
+                  <p>{p.desc}</p>
+                  <ul className="check-list">
+                    <li><span className="check">✓</span>Standard workspace access</li>
+                    <li><span className="check">✓</span>Secure account and saved work</li>
+                    <li><span className="check">✓</span>No automatic renewal</li>
+                  </ul>
+                  <CheckoutButton tier={p.tier} label="Choose access" className={p.popular ? 'btn btn-primary' : 'btn btn-secondary'} />
+                </article>
+              ))}
+            </div>
+            <p className="muted" style={{ textAlign: 'center', fontSize: 12, marginTop: 20 }}>Enterprise GBP pricing. Final taxes and payment methods are shown during checkout.</p>
+          </div>
+        </section>
+        <section className="section" id="faq">
+          <div className="container">
+            <div className="section-heading">
+              <span className="eyebrow">Good to know</span>
+              <h2>Frequently asked <span className="gradient-text">questions.</span></h2>
+            </div>
+            <div className="faq-grid">
+              <article className="faq glass"><h3>Will I be charged again?</h3><p>No. Each Astroiq access pass is a one-time payment. There are no subscriptions and no automatic renewals.</p></article>
+              <article className="faq glass"><h3>When does my access start?</h3><p>Access begins when Stripe confirms successful payment and Astroiq activates your entitlement. The purchased duration is measured in 24-hour periods.</p></article>
+              <article className="faq glass"><h3>Can I purchase another pass?</h3><p>Yes. Additional paid passes extend your existing active access period. Your account shows your current access status and expiry.</p></article>
+              <article className="faq glass"><h3>What happens when access expires?</h3><p>Protected workspace features become unavailable until you purchase another pass. Account and transaction records remain subject to our published retention policy.</p></article>
+              <article className="faq glass"><h3>Is Astroiq financial advice?</h3><p>This starter website describes a financial intelligence workspace. Product claims and any regulated financial functionality must be reviewed and clearly defined before launch.</p></article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </MarketingShell>
+  );
+}
