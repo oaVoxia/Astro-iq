@@ -5,7 +5,7 @@ import { hasActiveEntitlement } from '@/lib/entitlements/access';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PROFILE_COLUMNS = 'display_name,company,job_title,timezone,bio,created_at';
+const PROFILE_COLUMNS = 'display_name,company,job_title,timezone,bio,avatar_url,created_at';
 
 function optionalText(value: unknown, min: number, max: number, label: string) {
   if (value == null || value === '') return { ok: true as const, value: null };
@@ -35,6 +35,7 @@ export async function GET() {
       jobTitle: profile?.job_title ?? null,
       timezone: profile?.timezone ?? 'Europe/London',
       bio: profile?.bio ?? null,
+      avatarUrl: profile?.avatar_url ?? null,
     },
     workspace,
     access: {
