@@ -35,6 +35,8 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
   const [metric, setMetric] = useState({ start: '', end: '', net: '', revenue: '', expenses: '', cash: '', burn: '' });
   const [note, setNote] = useState({ title: '', body: '' });
   const [editing, setEditing] = useState<NoteRow | null>(null);
+  const [editingMetric, setEditingMetric] = useState<MetricRow | null>(null);
+  const [metricNet, setMetricNet] = useState('');
 
   async function saveMetric(e: React.FormEvent) {
     e.preventDefault();
@@ -65,6 +67,31 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
       return;
     }
     setMetric({ start: '', end: '', net: '', revenue: '', expenses: '', cash: '', burn: '' });
+    router.refresh();
+  }
+
+  async function updateMetric(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingMetric) return;
+    const net = toPence(metricNet);
+    if (net == null) {
+      setError('Net position must be a number.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/metrics/${editingMetric.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ net_position_pence: net }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || 'Unable to update period.');
+      return;
+    }
+    setEditingMetric(null);
     router.refresh();
   }
 
@@ -140,7 +167,10 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
         <div className="form-actions"><button className="btn btn-primary" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save period'}</button></div>
       </form>
 
-      <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Recent periods</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '30px 0 14px' }}>
+        <h2 style={{ fontSize: 20, margin: 0 }}>Recent periods</h2>
+        <a className="btn btn-secondary" href="/api/metrics/export">Export CSV</a>
+      </div>
       <div className="table-wrap">
         {!metrics.length ? <div className="empty-state">No periods yet.</div> : (
           <table>
@@ -152,13 +182,26 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
                   <td>{gbp(m.net_position_pence)}</td>
                   <td>{gbp(m.revenue_pence)}</td>
                   <td>{gbp(m.expenses_pence)}</td>
-                  <td><button className="btn btn-secondary" type="button" disabled={busy} onClick={() => remove(`/api/metrics/${m.id}`)}>Delete</button></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => { setEditingMetric(m); setMetricNet(String(m.net_position_pence / 100)); }}>Edit</button>
+                    <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => remove(`/api/metrics/${m.id}`)}>Delete</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {editingMetric && (
+        <form className="glass note-form" onSubmit={updateMetric} style={{ marginTop: 12 }}>
+          <label className="field"><span>Update net for {editingMetric.period_start} (£)</span><input value={metricNet} onChange={e => setMetricNet(e.target.value)} required /></label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" disabled={busy} type="submit">{busy ? 'Saving…' : 'Update period'}</button>
+            <button className="btn btn-secondary" type="button" onClick={() => setEditingMetric(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
 
       <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Add a note</h2>
       <form className="glass note-form" onSubmit={saveNote}>
