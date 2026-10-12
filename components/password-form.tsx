@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 
 export function PasswordForm() {
+  const [current, setCurrent] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -19,8 +20,13 @@ export function PasswordForm() {
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!url || !key) throw new Error('Authentication is not configured.');
       const supabase = createBrowserClient(url, key);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) throw new Error('Sign in again before changing your password.');
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ email: user.email, password: current });
+      if (verifyError) throw new Error('Current password is incorrect.');
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+      setCurrent('');
       setPassword('');
       setMessage('Password updated.');
     } catch (err) {
@@ -32,6 +38,10 @@ export function PasswordForm() {
 
   return (
     <form onSubmit={submit}>
+      <label className="field">
+        <span>Current password</span>
+        <input type="password" value={current} onChange={e => setCurrent(e.target.value)} autoComplete="current-password" required />
+      </label>
       <label className="field">
         <span>New password</span>
         <input type="password" minLength={8} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required />
