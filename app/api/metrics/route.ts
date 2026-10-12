@@ -1,5 +1,6 @@
 import { isAuthError, requireUser } from '@/lib/api/context';
 import { fail, ok } from '@/lib/api/json';
+import { isRateLimited } from '@/lib/security/rate-limit';
 import { assertActiveAccess, getWorkspace } from '@/lib/workspace/access';
 import { operatingMargin, runwayMonths } from '@/lib/workspace/types';
 
@@ -45,6 +46,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const ctx = await requireUser();
   if (isAuthError(ctx)) return ctx;
+  if (isRateLimited('metrics', ctx.user.id)) return fail('Too many metric writes. Try again shortly.', 429);
 
   const access = await assertActiveAccess(ctx.supabase, ctx.user.id);
   if (!access.ok) return fail(access.error, access.status);
