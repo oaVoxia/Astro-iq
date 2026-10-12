@@ -44,9 +44,10 @@ export function AuthForm({ mode }: { mode: 'sign-in'|'sign-up' }) {
     {mode==='sign-up'&&<div className="field"><label htmlFor="name">Name (optional)</label><input id="name" name="name" autoComplete="name" maxLength={120} value={name} onChange={e=>setName(e.target.value)} /></div>}
     <div className="field"><label htmlFor="email">Work email</label><input id="email" name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} /></div>
     <div className="field"><label htmlFor="password">Password</label><input id="password" name="password" type="password" autoComplete={mode==='sign-in'?'current-password':'new-password'} required minLength={8} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} /></div>
+    {mode==='sign-in'&&<p style={{margin:'4px 0 0',fontSize:13}}><Link href="/forgot-password" style={{color:'#c4b5fd'}}>Forgot password?</Link></p>}
     {error&&<p role="alert" className="notice">{error}</p>}{message&&<p role="status" className="notice success-notice">{message}</p>}
     <button className="btn btn-primary" style={{width:'100%',marginTop:8}} disabled={busy}>{busy?'Please wait…':mode==='sign-in'?'Sign in securely':'Create account'}</button>
     <p className="muted" style={{fontSize:12,lineHeight:1.6,marginTop:16}}>{mode==='sign-up'?'By creating an account, you agree to the published Terms and Privacy Policy.':'Use the email associated with your Astroiq account.'}</p>
-    <p className="muted" style={{fontSize:13,marginTop:20}}>{mode==='sign-in'?<>New to Astroiq? <Link href="/sign-up" style={{color:'#b8adff'}}>Create an account</Link></>:<>Already registered? <Link href="/sign-in" style={{color:'#b8adff'}}>Sign in</Link></>}</p>
+    <p className="muted" style={{fontSize:13,marginTop:20}}>{mode==='sign-in'?<>New to Astroiq? <Link href="/sign-up" style={{color:'#c4b5fd'}}>Create an account</Link></>:<>Already registered? <Link href="/sign-in" style={{color:'#c4b5fd'}}>Sign in</Link></>}</p>
   </form>;
 }
