@@ -10,6 +10,7 @@ import { SignOutButton } from '@/components/sign-out-button';
 import { Footer } from '@/components/footer';
 import { FintechChat } from '@/components/fintech-chat';
 import { WorkspacePanel } from '@/components/workspace-panel';
+import { WorkspaceName } from '@/components/workspace-name';
 
 export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export default async function DashboardPage() {
     supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase.from('workspaces').select('id,name,currency').eq('user_id', user.id).maybeSingle(),
     supabase.from('metrics').select('id,period_start,net_position_pence,revenue_pence,expenses_pence,cash_pence,burn_pence').eq('user_id', user.id).order('period_start', { ascending: false }).limit(8),
-    supabase.from('notes').select('id,title,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
+    supabase.from('notes').select('id,title,body,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
   ]);
 
   const active = !grantError && hasActiveEntitlement(grants);
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
             <SignOutButton />
           </aside>
           <section className="dash-main">
-            <span className="eyebrow"><span className="dot" /> {workspace?.name ?? 'Workspace'}</span>
+            {active && workspace ? <WorkspaceName initialName={workspace.name} /> : <span className="eyebrow"><span className="dot" /> {workspace?.name ?? 'Workspace'}</span>}
             <h1 style={{ marginTop: 16 }}>Good to see you, {name}.</h1>
             <p className="muted" style={{ lineHeight: 1.7 }}>Track periods, notes, and access in one workspace.</p>
             {grantError || orderError ? <div className="notice" role="alert">Some account data could not be loaded. Refresh in a moment or contact support if the issue persists.</div> : null}
