@@ -30,7 +30,7 @@ export default async function DashboardPage() {
   const [{ data: grants, error: grantError }, { data: orders, error: orderError }, { data: profile }, { data: workspace }, { data: metrics }, { data: notes }] = await Promise.all([
     supabase.from('entitlements').select('id,tier,status,starts_at,expires_at').eq('user_id', user.id).order('expires_at', { ascending: false }).limit(20),
     supabase.from('orders').select('id,tier,amount_total,currency,status,created_at,paid_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
-    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('display_name,avatar_url').eq('id', user.id).maybeSingle(),
     supabase.from('workspaces').select('id,name,currency').eq('user_id', user.id).maybeSingle(),
     supabase.from('metrics').select('id,period_start,net_position_pence,revenue_pence,expenses_pence,cash_pence,burn_pence').eq('user_id', user.id).order('period_start', { ascending: false }).limit(8),
     supabase.from('notes').select('id,title,body,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
@@ -43,6 +43,7 @@ export default async function DashboardPage() {
   const margin = latest ? operatingMargin(latest.revenue_pence, latest.expenses_pence) : null;
   const runway = latest ? runwayMonths(latest.cash_pence, latest.burn_pence) : null;
   const insights = active ? buildInsights(metrics ?? []) : [];
+  const letter = name.slice(0, 1).toUpperCase();
 
   return (
     <>
@@ -58,8 +59,13 @@ export default async function DashboardPage() {
           <section className="dash-main">
             <Suspense fallback={null}><CheckoutNotice /></Suspense>
             {active && workspace ? <WorkspaceName initialName={workspace.name} /> : <span className="eyebrow"><span className="dot" /> {workspace?.name ?? 'Workspace'}</span>}
-            <h1 style={{ marginTop: 16 }}>Good to see you, {name}.</h1>
-            <p className="muted" style={{ lineHeight: 1.7 }}>Track periods, notes, and access in one workspace.</p>
+            <div className="avatar-row" style={{ marginTop: 16 }}>
+              <div className="avatar" aria-hidden="true">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <span>{letter}</span>}</div>
+              <div>
+                <h1 style={{ margin: 0 }}>Good to see you, {name}.</h1>
+                <p className="muted" style={{ lineHeight: 1.7, margin: '6px 0 0' }}>Track periods, notes, and access in one workspace.</p>
+              </div>
+            </div>
             {grantError || orderError ? <div className="notice" role="alert">Some account data could not be loaded. Refresh in a moment or contact support if the issue persists.</div> : null}
             <div className="dash-grid">
               <article className="dash-card glass">
