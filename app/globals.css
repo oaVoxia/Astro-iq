@@ -108,8 +108,8 @@ button{cursor:pointer}
 .form-card{width:min(400px,100%);border-radius:18px;padding:26px}
 .field{display:grid;gap:5px;margin:11px 0}
 .label,.field label,.field span{font-size:12.5px;color:var(--n-1);font-weight:550}
-.input,.field input,.field textarea{width:100%;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);border-radius:10px;padding:11px 12px;outline:none}
-.input:focus,.field input:focus,.field textarea:focus{border-color:var(--input-focus);box-shadow:var(--input-ring)}
+.input,.field input,.field textarea,.field select{width:100%;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);border-radius:10px;padding:11px 12px;outline:none}
+.input:focus,.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--input-focus);box-shadow:var(--input-ring)}
 .field textarea{resize:vertical;min-height:96px}
 .alert{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#fecaca;border-radius:10px;padding:10px 12px;font-size:var(--fs-sm)}
 .success,.success-notice{background:var(--pill-positive-bg);border:1px solid var(--pill-positive-border);color:#d1fae5;border-radius:10px;padding:10px 12px;font-size:var(--fs-sm)}
