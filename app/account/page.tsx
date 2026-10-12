@@ -14,22 +14,29 @@ export default async function AccountPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in?next=/account');
-  const { data: profile } = await supabase.from('profiles').select('display_name,created_at').eq('id', user.id).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('display_name,company,job_title,timezone,bio,created_at').eq('id', user.id).maybeSingle();
 
   return (
     <>
       <Nav />
       <main className="container section" style={{ minHeight: '65vh' }}>
-        <div style={{ maxWidth: 640, margin: 'auto' }}>
+        <div style={{ maxWidth: 680, margin: 'auto' }}>
           <span className="eyebrow">Account</span>
-          <h1 style={{ fontSize: 40, margin: '16px 0 8px' }}>Your account</h1>
-          <p className="muted">Update your name and password. Email changes stay with support.</p>
+          <h1 style={{ fontSize: 40, margin: '16px 0 8px' }}>Profile</h1>
+          <p className="muted">Manage how you appear in the workspace. Email changes stay with support.</p>
           <div className="glass" style={{ padding: 24, borderRadius: 18, marginTop: 24 }}>
             <div className="field">
               <label>Email address</label>
               <div style={{ padding: 13, border: '1px solid var(--border)', borderRadius: 10, overflowWrap: 'anywhere' }}>{user.email}</div>
+              <span className="muted" style={{ fontSize: 12 }}>{user.email_confirmed_at ? 'Verified' : 'Verification pending'}</span>
             </div>
-            <ProfileForm initialName={profile?.display_name ?? ''} />
+            <ProfileForm initial={{
+              displayName: profile?.display_name ?? '',
+              company: profile?.company ?? '',
+              jobTitle: profile?.job_title ?? '',
+              timezone: profile?.timezone ?? 'Europe/London',
+              bio: profile?.bio ?? '',
+            }} />
             <hr style={{ border: 0, borderTop: '1px solid var(--border)', margin: '20px 0' }} />
             <PasswordForm />
             <div className="field" style={{ marginTop: 16 }}>
