@@ -6,6 +6,7 @@ export function rateLimitConfiguration(route: string) {
     auth: { requests: 10, windowSeconds: 60 },
     metrics: { requests: 30, windowSeconds: 60 },
     notes: { requests: 20, windowSeconds: 60 },
+    avatar: { requests: 6, windowSeconds: 60 },
   };
   return limits[route] ?? { requests: 60, windowSeconds: 60 };
 }
