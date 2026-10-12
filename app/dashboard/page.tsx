@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { LayoutDashboard, Settings, ShieldCheck, Sparkles, CreditCard } from 'lucide-react';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { hasActiveEntitlement } from '@/lib/entitlements/access';
 import { operatingMargin, runwayMonths } from '@/lib/workspace/types';
+import { buildInsights } from '@/lib/workspace/insights';
 import { Nav } from '@/components/nav';
 import { SignOutButton } from '@/components/sign-out-button';
 import { Footer } from '@/components/footer';
 import { FintechChat } from '@/components/fintech-chat';
 import { WorkspacePanel } from '@/components/workspace-panel';
 import { WorkspaceName } from '@/components/workspace-name';
+import { CheckoutNotice } from '@/components/checkout-notice';
 
 export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -39,6 +42,7 @@ export default async function DashboardPage() {
   const latest = metrics?.[0];
   const margin = latest ? operatingMargin(latest.revenue_pence, latest.expenses_pence) : null;
   const runway = latest ? runwayMonths(latest.cash_pence, latest.burn_pence) : null;
+  const insights = active ? buildInsights(metrics ?? []) : [];
 
   return (
     <>
@@ -52,6 +56,7 @@ export default async function DashboardPage() {
             <SignOutButton />
           </aside>
           <section className="dash-main">
+            <Suspense fallback={null}><CheckoutNotice /></Suspense>
             {active && workspace ? <WorkspaceName initialName={workspace.name} /> : <span className="eyebrow"><span className="dot" /> {workspace?.name ?? 'Workspace'}</span>}
             <h1 style={{ marginTop: 16 }}>Good to see you, {name}.</h1>
             <p className="muted" style={{ lineHeight: 1.7 }}>Track periods, notes, and access in one workspace.</p>
@@ -79,6 +84,14 @@ export default async function DashboardPage() {
                 <h2 style={{ fontSize: 22, margin: '0 0 9px' }}>Your next step starts here.</h2>
                 <p className="muted" style={{ lineHeight: 1.7, fontSize: 14 }}>Choose a 30-, 90- or 365-day access pass. Every purchase is a one-time payment with no automatic renewal.</p>
                 <Link className="btn btn-primary" href="/pricing">View access passes ↗</Link>
+              </article>
+            )}
+            {active && insights.length > 0 && (
+              <article className="glass" style={{ padding: 18, borderRadius: 16, marginTop: 8 }}>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>Insights</div>
+                <ul className="check-list" style={{ margin: 0 }}>
+                  {insights.map(item => <li key={item}><span className="check">✓</span>{item}</li>)}
+                </ul>
               </article>
             )}
             {active && <WorkspacePanel metrics={metrics ?? []} notes={notes ?? []} />}
