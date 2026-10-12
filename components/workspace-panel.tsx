@@ -14,6 +14,7 @@ export type MetricRow = {
 export type NoteRow = {
   id: string;
   title: string;
+  body?: string;
   created_at: string;
 };
 
@@ -33,6 +34,7 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
   const [error, setError] = useState('');
   const [metric, setMetric] = useState({ start: '', end: '', net: '', revenue: '', expenses: '', cash: '', burn: '' });
   const [note, setNote] = useState({ title: '', body: '' });
+  const [editing, setEditing] = useState<NoteRow | null>(null);
 
   async function saveMetric(e: React.FormEvent) {
     e.preventDefault();
@@ -86,6 +88,26 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
       return;
     }
     setNote({ title: '', body: '' });
+    router.refresh();
+  }
+
+  async function updateNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setBusy(true);
+    setError('');
+    const res = await fetch(`/api/notes/${editing.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: editing.title, body: editing.body }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || 'Unable to update note.');
+      return;
+    }
+    setEditing(null);
     router.refresh();
   }
 
@@ -145,6 +167,17 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
         <button className="btn btn-primary" disabled={busy} type="submit">{busy ? 'Saving…' : 'Save note'}</button>
       </form>
 
+      {editing && (
+        <form className="glass note-form" onSubmit={updateNote} style={{ marginTop: 12 }}>
+          <label className="field"><span>Edit title</span><input value={editing.title} onChange={e => setEditing({ ...editing, title: e.target.value })} maxLength={120} required /></label>
+          <label className="field"><span>Edit note</span><textarea value={editing.body ?? ''} onChange={e => setEditing({ ...editing, body: e.target.value })} maxLength={4000} rows={4} required /></label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" disabled={busy} type="submit">{busy ? 'Saving…' : 'Update note'}</button>
+            <button className="btn btn-secondary" type="button" onClick={() => setEditing(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
+
       <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Notes</h2>
       <div className="table-wrap">
         {!notes.length ? <div className="empty-state">No notes yet.</div> : (
@@ -155,7 +188,10 @@ export function WorkspacePanel({ metrics, notes }: { metrics: MetricRow[]; notes
                 <tr key={n.id}>
                   <td>{n.title}</td>
                   <td>{new Date(n.created_at).toLocaleDateString('en-GB', { timeZone: 'UTC' })}</td>
-                  <td><button className="btn btn-secondary" type="button" disabled={busy} onClick={() => remove(`/api/notes/${n.id}`)}>Delete</button></td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => setEditing(n)}>Edit</button>
+                    <button className="btn btn-secondary" type="button" disabled={busy} onClick={() => remove(`/api/notes/${n.id}`)}>Delete</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
