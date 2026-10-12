@@ -13,6 +13,8 @@ Astroiq is a Next.js App Router application deployed to Cloudflare Workers via t
 
 ## Data model
 
+Commercial (service-role writes only):
+
 - `profiles` — display name linked to `auth.users`.
 - `orders` — intent records with tier, duration, amount and status.
 - `payments` — verified Stripe payment records.
@@ -20,7 +22,29 @@ Astroiq is a Next.js App Router application deployed to Cloudflare Workers via t
 - `webhook_events` — idempotency log for Stripe event IDs.
 - `audit_logs` — append-only operational trail.
 
-All tables have row-level security. Ordinary users can read their own rows; writes to commercial tables are restricted to the service role used only inside the verified webhook.
+Workspace (user-owned under RLS):
+
+- `workspaces` — one workspace per user, created with the profile.
+- `metrics` — period snapshots (net, revenue, expenses, cash, burn) in pence.
+- `notes` — freeform workspace notes.
+
+All tables have row-level security. Ordinary users can read their own commercial rows. Writes to commercial tables are restricted to the service role used only inside the verified webhook. Workspace tables allow the owning user to read and write their own rows.
+
+## API
+
+| Route | Auth | Access gate | Purpose |
+| --- | --- | --- | --- |
+| `GET /api/health` | no | no | Liveness |
+| `GET /api/me` | yes | no | Identity, workspace, access |
+| `PATCH /api/me` | yes | no | Update display name |
+| `GET /api/entitlement` | yes | no | Active grant and history |
+| `GET /api/orders` | yes | no | Purchase history |
+| `POST /api/checkout` | yes | no | Start Stripe Checkout |
+| `POST /api/webhooks/stripe` | Stripe sig | no | Fulfill or refund |
+| `GET/PATCH /api/workspace` | yes | active | Workspace name |
+| `GET/POST /api/metrics` | yes | active | Period metrics |
+| `GET/POST /api/notes` | yes | active | Workspace notes |
+| `POST /api/chat` | yes | no | Assistant (rate limited) |
 
 ## Security boundaries
 
@@ -28,3 +52,4 @@ All tables have row-level security. Ordinary users can read their own rows; writ
 - Service-role and Stripe secrets never leave the server/Worker environment.
 - The webhook verifies the Stripe signature before any side effect and records the event ID first.
 - Redirects are restricted to the configured origin.
+- Workspace writes require a currently active entitlement.
