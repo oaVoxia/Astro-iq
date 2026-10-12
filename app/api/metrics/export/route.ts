@@ -5,7 +5,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function cell(value: string | number) {
-  const text = String(value);
+  let text = String(value);
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
