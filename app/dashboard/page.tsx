@@ -9,6 +9,7 @@ import { Nav } from '@/components/nav';
 import { SignOutButton } from '@/components/sign-out-button';
 import { Footer } from '@/components/footer';
 import { FintechChat } from '@/components/fintech-chat';
+import { WorkspacePanel } from '@/components/workspace-panel';
 
 export const metadata: Metadata = { title: 'Workspace', robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
@@ -27,8 +28,8 @@ export default async function DashboardPage() {
     supabase.from('orders').select('id,tier,amount_total,currency,status,created_at,paid_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
     supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase.from('workspaces').select('id,name,currency').eq('user_id', user.id).maybeSingle(),
-    supabase.from('metrics').select('period_start,net_position_pence,revenue_pence,expenses_pence,cash_pence,burn_pence').eq('user_id', user.id).order('period_start', { ascending: false }).limit(6),
-    supabase.from('notes').select('id,title,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+    supabase.from('metrics').select('id,period_start,net_position_pence,revenue_pence,expenses_pence,cash_pence,burn_pence').eq('user_id', user.id).order('period_start', { ascending: false }).limit(8),
+    supabase.from('notes').select('id,title,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(8),
   ]);
 
   const active = !grantError && hasActiveEntitlement(grants);
@@ -52,7 +53,7 @@ export default async function DashboardPage() {
           <section className="dash-main">
             <span className="eyebrow"><span className="dot" /> {workspace?.name ?? 'Workspace'}</span>
             <h1 style={{ marginTop: 16 }}>Good to see you, {name}.</h1>
-            <p className="muted" style={{ lineHeight: 1.7 }}>Your Astroiq workspace and access details at a glance.</p>
+            <p className="muted" style={{ lineHeight: 1.7 }}>Track periods, notes, and access in one workspace.</p>
             {grantError || orderError ? <div className="notice" role="alert">Some account data could not be loaded. Refresh in a moment or contact support if the issue persists.</div> : null}
             <div className="dash-grid">
               <article className="dash-card glass">
@@ -79,44 +80,7 @@ export default async function DashboardPage() {
                 <Link className="btn btn-primary" href="/pricing">View access passes ↗</Link>
               </article>
             )}
-            {active && (
-              <>
-                <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Recent periods</h2>
-                <div className="table-wrap">
-                  {!metrics?.length ? <div className="empty-state">No periods yet. Post to /api/metrics to record one.</div> : (
-                    <table>
-                      <thead><tr><th>Period</th><th>Net</th><th>Revenue</th><th>Expenses</th></tr></thead>
-                      <tbody>
-                        {metrics.map(m => (
-                          <tr key={m.period_start}>
-                            <td>{m.period_start}</td>
-                            <td>{gbp(m.net_position_pence)}</td>
-                            <td>{gbp(m.revenue_pence)}</td>
-                            <td>{gbp(m.expenses_pence)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Notes</h2>
-                <div className="table-wrap">
-                  {!notes?.length ? <div className="empty-state">No notes yet. Post to /api/notes to save one.</div> : (
-                    <table>
-                      <thead><tr><th>Title</th><th>Created</th></tr></thead>
-                      <tbody>
-                        {notes.map(n => (
-                          <tr key={n.id}>
-                            <td>{n.title}</td>
-                            <td>{new Date(n.created_at).toLocaleDateString('en-GB', { timeZone: 'UTC' })}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </>
-            )}
+            {active && <WorkspacePanel metrics={metrics ?? []} notes={notes ?? []} />}
             <h2 style={{ fontSize: 20, margin: '30px 0 14px' }}>Recent purchases</h2>
             <div className="table-wrap">
               {!orders?.length ? <div className="empty-state"><CreditCard size={28} style={{ margin: '0 auto 12px' }} /><div>No purchases yet.</div><p style={{ fontSize: 13 }}>Your confirmed orders will appear here.</p></div> : (
